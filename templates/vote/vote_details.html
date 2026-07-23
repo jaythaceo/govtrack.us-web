@@ -14,7 +14,18 @@
 
 {% block head %}
 	<meta property="og:title" content="{{ vote.question|truncatewords:10 }} -- {{ vote.get_chamber_display }} Vote #{{ vote.number }} -- {{ vote.created|date:"DATE_FORMAT" }}" />
+
 	<style>
+    #action-buttons
+    {
+        float: right;
+    }
+        #action-buttons button
+        {
+            margin: 0 0 5px 10px;
+            min-width: 8.25em;
+        }
+
     #vote-summary-wrapper {
         border: 1px solid #AAA;
         padding: 10px 10px 0 10px;
@@ -36,17 +47,6 @@
 	  margin-bottom: .25em;
 	  line-height: 128%;
 	}
-
-    #what-you-can-do-actions {
-    }
-        #what-you-can-do-actions > * {
-            float: left;
-            margin-right: 1.5em;
-            margin-top: 1em;
-        }
-        #what-you-can-do-actions > button {
-            min-width: 135px; /* at least as large as the largest so that when the buttons break to two lines they have the same width */
-        }
 
 	#vote_notes {
 		margin: 1em 0;
@@ -85,7 +85,7 @@
         }
 
     .diagram-legend {
-	margin-top: .5em;
+	   margin-top: .5em;
         color: #666;
         line-height: 130%;
         font-size: 12px;
@@ -122,9 +122,31 @@
 {% endblock %}
 	
 {% block body_scripts %}
-
 <script>
 	$(function() {
+        var cartogram = document.getElementById("cartogram-container").getElementsByTagName("svg")[0];
+        for (let polygon of cartogram.getElementsByTagName("polygon"))
+        {
+            polygon.style.cursor = "pointer";
+
+            $(polygon).popover({
+                trigger: "hover",
+                content: polygon.getAttribute("data-text"),
+                html: true
+            });
+
+            $(polygon).on("click", function() {
+                window.location = polygon.getAttribute("data-link");
+            });
+
+            $(polygon).on("mouseenter", function() {
+                polygon.style.strokeWidth = 3;
+            });
+            $(polygon).on("mouseleave", function() {
+                polygon.style.strokeWidth = 1;
+            });
+        }
+
 		$('#study-guide li').each(function() {
 			var question = $(this);
 			var tip = question.next(".tips");
@@ -288,6 +310,22 @@ $(function() {
 
 {% block body %}
 
+<div id="action-buttons">
+    <button class="btn btn-sm btn-primary" onclick="window.location='/events/track-something?feed=misc:allvotes';">
+        <i class="fas fa-envelope"> </i>
+        <span style="margin-left: 3px;">
+            Get Alerts
+        </span>
+    </button>
+    <br>
+    <button class="btn btn-sm btn-secondary" onclick="window.location='/congress/votes/compare/_add?vote={{vote.congressproject_id}}';">
+        <i class="fas fa-list"> </i>
+        <span style="margin-left: 3px;">
+            Compare
+        </span>
+    </button>
+</div>
+
 <h1 class="long" data-vote-id="{{vote.id}}" style="margin-bottom: 0; border: none;">
   {{ vote.question }}
 </h1>
@@ -426,17 +464,10 @@ $(function() {
 
 {% with vote.totals as totals %}
 <div style="margin: 30px 0 45px 0;">
-    <!-- Horizontal Table -->
+<div class="row">
+    <div class="col-lg-8">
     <table class="stats" style="margin: 0 30px 0 0" aria-label="Vote totals broken down by vote and party">
         <thead>
-            {% if totals.features %}
-            <tr style="font-style: italic" class="d-none d-md-table-row">
-                <th colspan="3"></th>
-                <th colspan="{{totals.parties|length}}">By Party</th>
-                <th style="border-right: 1px solid #BBB; padding-left: 6px; padding-right: 6px;" class="d-none d-md-table-cell"></th>
-                <th colspan="{{totals.features|length}}">Selected Caucuses</th>
-            </tr>
-            {% endif %}
             <tr style="line-height: 115%">
                 <th></th>
                 <th colspan="2">All Votes</th>
@@ -447,15 +478,6 @@ $(function() {
                         {% else %}
                     	V<span class="hidden-xs">ice </span>P<span class="hidden-xs">resident</span>
                         {% endif %}
-                    </th>
-                {% endfor %}
-                {% if totals.features %}
-                    <th style="border-right: 1px solid #BBB; padding-left: 6px; padding-right: 6px;" class="d-none d-md-table-cell">
-                    </th>
-                {% endif %}
-                {% for feature in totals.features %}
-                    <th style="padding-left: 6px; padding-right: 6px; max-width: 12em;" class="d-none d-md-table-cell">
-                        {{feature}}
                     </th>
                 {% endfor %}
             </tr>
@@ -488,29 +510,12 @@ $(function() {
 						<div style="height: .25em;"><div style="height: .25em; width: {{7|mult:count.count|div:totals.max_option_count|floatformat:3}}vw; display: inline-block;" class="color_{{count.party.0}}">&nbsp;</div></div>
 					</td>
                 {% endfor %}
-                {% if item.feature_counts %}
-                    <td style="border-right: 1px solid #BBB; padding: 6px 8px;" class="d-none d-md-table-cell">
-                    </td>
-                {% endif %}
-                {% for count in item.feature_counts %}
-                    <td style="padding: 6px 8px; font-weight: normal;" class="d-none d-md-table-cell">
-                        <div>{{ count.count }}</div>
-                        <div style="height: .25em;">
-                        {% for subcount in count.by_party %}
-                        {% if subcount.count %}
-                        <div style="height: .25em; width: {{7|mult:subcount.count|div:totals.max_option_count|floatformat:3}}vw; display: inline-block;" class="color_{{subcount.party.0}}">&nbsp;</div>
-                        {% endif %}
-                        {% endfor %}
-                        </div>
-                    </td>
-                {% endfor %}
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <div style="font: 12px/16px;">
-    <p style="margin: 1em 0 .33em 0;">
+    <p style="margin: 15px 0; line-height: 125%;">
         {{ vote.result }}.
 
         {% if vote.required == "1/2" %}Simple Majority{% else %}{{ vote.required }}{% endif %}
@@ -523,27 +528,67 @@ $(function() {
         {% if totals.party_is_caucus %}
             Independents are grouped with the party they caucus with.
         {% endif %}
-    </p>
-    <p style="margin: 0 0 .33em 0;">
+
         Data from the official record at <a href="{{vote.get_source_link}}">{{ vote.get_source_display }}</a>.
-    </p>
+    </p>    
+
+    <div id="admin_panel" style="margin: 15px 0;"> </div>
+
+    </div> <!-- /col -->
+
+    {% if has_diagram.diagram %}
+    <div class="col-lg-4">
+    <div class="card" style="margin-bottom: 15px;">
+      <div class="card-header">
+        Vote Diagram
+      </div>
+      <div class="card-body" style="text-align: center">
+      <div style="display: inline-block;">
+        <img src="{{ vote.get_absolute_url }}/diagram" class="img-fluid"
+         alt="Diagram in the style of the seats on the floor of the House or Senate showing how legislators voted." />
+        <div style="margin-top: .5em;" class="diagram-legend">
+            <div style="float: left; margin-right: 0 .25em 1em 0">Key:</div>
+                {% for item in totals.options %}
+                  {% if item.option.key == "+" or item.option.key == "-" %}
+                    {% for count in item.party_counts %}
+                        {% if count.party.0 == "D" or count.party.0 == "R" %}
+                            {% for k, v in diagram_key_colors %}
+                                {% if count.count > 0 and k.0 == count.party.0 and k.1 == "+" %}
+                                    <span style="padding: 2px 4px; border: 1px solid transparent; {% if item.option.key == "+" %}background{% else %}border{% endif %}-color: {{v}}; cursor: default; {% if item.option.key == "+" %}color: white;{% else %}color: #222;{% endif %}; font-weight: bold;" title="{{count.party}} {{item.option.value}}">
+                                        {{count.party}} - {{item.option.value}}</span>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                  {% endif %}
+                {% endfor %}
+            {% if has_ideology_scores %}
+            <br>
+            Seat position based on our <a href="/about/analysis#ideology">ideology score</a>.
+            {% endif %}
+        </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    {% endif %}
+</div> <!-- /row -->
+
     {% with vote.get_equivalent_aye_voters_us_population_percent as pct %}
     {% if pct %}
         {% for item in totals.options %}
             {% if item.option.key == pct.0 %}
-               <p style="margin: 0;">
+               <p>
                    The {{item.option.value}} votes represented {{pct.1|floatformat:0}}% of the country&rsquo;s population by apportioning each state&rsquo;s population to its voting senators.
                </p>
             {% endif %}
         {% endfor %}
     {% endif %}
     {% endwith %}
-    </div>
 
     {% if totals.features %}
-
     <!-- Caucuses Table for Small Screens -->
-    <div class="d-md-none" style="margin-top: 20px">
+    <div style="margin-top: 20px">
     <table class="stats" style="margin-top: 0">
         <thead>
             <tr>
@@ -635,89 +680,25 @@ $(function() {
         may be a member of multiple caucuses.
     </p>
     {% endif %}
-</div>
 
-<div class="row">
-{% if has_diagram.diagram %}
-    <div class="col-md-6 col-lg-5">
-        <div class="card" style="margin-bottom: 15px;">
-          <div class="card-header">
-            Ideology Vote Chart
-          </div>
-          <img src="{{ vote.get_absolute_url }}/diagram" class="img-fluid card-img-top" alt="Diagram in the style of the seats on the floor of the House or Senate showing how legislators voted." />
-          <div class="card-body">
-            <div style="margin: .5em 0;" class="diagram-legend">
-                <div style="float: left; margin: 0 .25em 1em 0">Key:</div>
-                {% for item in totals.options %}
-                  {% if item.option.key == "+" or item.option.key == "-" %}
-                    {% for count in item.party_counts %}
-                        {% if count.party.0 == "D" or count.party.0 == "R" %}
-                            {% for k, v in diagram_key_colors %}
-                                {% if count.count > 0 and k.0 == count.party.0 and k.1 == "+" %}
-                                    <span style="padding: 2px 4px; border: 1px solid transparent; {% if item.option.key == "+" %}background{% else %}border{% endif %}-color: {{v}}; cursor: default; {% if item.option.key == "+" %}color: white;{% else %}color: #222;{% endif %}; font-weight: bold;" title="{{count.party}} {{item.option.value}}">
-                                        {{count.party}} - {{item.option.value}}</span>
-                                {% endif %}
-                            {% endfor %}
-                        {% endif %}
-                    {% endfor %}
-                  {% endif %}
-                {% endfor %}
-            </div>
-            {% if has_ideology_scores %}
-            <p class="card-text">Seat position based on our <a href="/about/analysis#ideology">ideology score</a>.</p>
-            {% endif %}
-          </div>
-        </div>
-    </div>
-{% endif %}
 {% if has_diagram.map and vote.chamber_name != "Senate" %}
-    <div class="col-md-6">
         <div class="card" style="margin-bottom: 15px;">
           <div class="card-header">
-            Cartogram Map
+            Cartogram Vote Map
           </div>
-          <div class="card-body">
-            <img src="{{ vote.get_absolute_url }}/map" class="img-fluid" alt="Diagram in the style of a cartogram, which is a type of map, showing how legislators voted." />
-            {# {{has_diagram.map|safe}} Not sure if this works cross-browser because of namespace issues #}
-            <p class="card-text" style="margin-top: 15px;">
+          <div id="cartogram-container" class="card-body">
+            {{has_diagram.map|safe}}
+            <p class="card-text" style="margin: 15px 0 0 0;">
                 Each hexagon represents one congressional district.
                 {% for item in totals.options %}
                   {% if item.option.key == "+" %}
-                    Color indicates {{item.option.value}} votes.
+                    Shading indicates {{item.option.value}} votes.
                   {% endif %}
                 {% endfor %}
             </div>
           </div>
         </div>
-    </div>
 {% endif %}
-</div> <!-- /row -->
-
-<div id="admin_panel"> </div>
-
-<div class="card" style="margin: 30px 0; padding-bottom: 0;">
-  <div class="card-body">
-    <h3 style="margin: 5px 0 0 0; font-weight: bold;">
-        What you can do
-    </h3>
-
-    <div id="what-you-can-do-actions" class="clearfix">
-        <button class="btn btn-sm btn-primary" onclick="window.location='/events/track-something?feed=misc:allvotes';">
-            <i class="fas fa-envelope"> </i>
-            <span style="margin-left: 3px;">
-                Get Email Alerts
-            </span>
-        </button>
-
-        <button class="btn btn-sm btn-secondary" onclick="window.location='/congress/votes/compare/_add?vote={{vote.congressproject_id}}';">
-            <i class="fas fa-list"> </i>
-            <span style="margin-left: 3px;">
-                Compare to Another Vote
-            </span>
-        </button>
-    </div><!-- /what-you-can-do-actions -->
-  </div>
-</div>
 
 <div>
 	<div id="vote_notes">

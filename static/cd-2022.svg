@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-   height="631.56055"
    version="1.1"
-   width="867.03674"
+   width="100%"
+   __height="631.56055"
    id="svg2"
    inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
    sodipodi:docname="cd-2022.svg"
@@ -91,12 +91,6 @@
          y="416.64728"
          id="text1950">AR</text>
     </g>
-  </g>
-  <g
-     id="statelabels"
-     inkscape:label="statelabels"
-     inkscape:groupmode="layer"
-     transform="translate(-290.85949,-4.9884834)">
     <g
        id="g79"
        transform="translate(-1.7223573,-23.72863)">
